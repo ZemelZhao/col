@@ -45,6 +45,10 @@ class Main(WindowMain):
         self.window_prog_about = WindowAboutLogic(self)
         self.window_prog_about.show()
 
+    def prog_help(self):
+        self.window_prog_help = WindowHelpLogic(self)
+        self.window_prog_help.show()
+
 
 if __name__ == '__main__':
     import sys

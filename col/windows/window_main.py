@@ -7,6 +7,11 @@ from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,
                              QLineEdit, QRadioButton, QTextEdit, QVBoxLayout,
                              QGroupBox, QComboBox, QCheckBox, QSpinBox,
                              QGridLayout, QLCDNumber, QMainWindow, QAction)
+import os
+import sys
+myFolder = os.path.split(os.path.realpath(__file__))[0]
+sys.path.append(myFolder)
+
 from .window_setting import WindowOption
 from .window_graph_show import WindowGraphShow
 from .window_tinker import WindowAbout, WindowHelp
@@ -20,7 +25,7 @@ class WindowMain(QMainWindow):
         self.window_main_option = WindowOption()
         self.window_graph_show = WindowGraphShow()
         self.window_prog_about = WindowAbout()
-        self.window_prog_info = WindowHelp()
+        self.window_prog_help = WindowHelp()
         self.initUI()
 
     def initUI(self):
@@ -31,7 +36,7 @@ class WindowMain(QMainWindow):
 
         """# Action"""
         icon_filesave = os.path.join(self.path_resource, 'filesave')
-        icon_picsave = os.path.join(self.path_resource, 'pic_save')
+        icon_picsave = os.path.join(self.path_resource, 'picsave')
         icon_option = os.path.join(self.path_resource, 'option')
         icon_graph = os.path.join(self.path_resource, 'graph')
         icon_start = os.path.join(self.path_resource, 'start')
@@ -41,6 +46,9 @@ class WindowMain(QMainWindow):
         self.action_graph = self.create_action('&Graph', self.graph_show, 'Ctrl + G', icon_graph, None)
         self.action_about = self.create_action('About', self.prog_about, None, icon_info, None)
         self.action_help = self.create_action('Help', self.prog_help, None, icon_help, None)
+        self.action_start = self.create_action('Start/Restart', self.start_restart, None, icon_start, None)
+        self.action_filesave = self.create_action('filesave', self.file_save, None, icon_filesave, None)
+        self.action_picsave = self.create_action('picsave', self.pic_save, None, icon_picsave, None)
 
         """# Menu Bar"""
         menu_file = self.menuBar().addMenu('&File')
@@ -58,6 +66,13 @@ class WindowMain(QMainWindow):
         self.toolbar_main_option.addAction(self.action_graph)
 
         self.toolbar_main_control = self.addToolBar('Control')
+        self.toolbar_main_control.addAction(self.action_start)
+        self.toolbar_main_control.addAction(self.action_filesave)
+        self.toolbar_main_control.addAction(self.action_picsave)
+
+        self.toolbar_tinker = self.addToolBar('Tinker')
+        self.toolbar_tinker.addAction(self.action_help)
+        self.toolbar_tinker.addAction(self.action_about)
 
     def main_option(self):
         self.window_main_option.show()
@@ -70,6 +85,16 @@ class WindowMain(QMainWindow):
 
     def prog_help(self):
         self.window_prog_help.show()
+
+    def start_restart(self):
+        pass
+
+    def file_save(self):
+        pass
+
+    def pic_save(self):
+        pass
+
 
     def create_action(self, text, slot=None, shortcut=None, icon=None,
                       tip=None, checkable=None, signal='triggered()'):
