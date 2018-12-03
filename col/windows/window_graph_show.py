@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,
 import sys
 import os
 myFolder = os.path.split(os.path.realpath(__file__))[0]
-sys.path.append(os.path.join(myFolder, os.pardir, 'config'))
+sys.path.append(os.path.join(myFolder, os.pardir, 'base'))
 import pyqtgraph as pg
 from widget import CustomAxis
 from base import PlotWidgetCol
