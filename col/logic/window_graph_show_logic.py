@@ -39,6 +39,7 @@ class WindowGraphShowLogic(WindowGraphShow):
 
     def initUI(self):
         self.config_ini_read()
+        self.judge_close = False
         super(WindowGraphShowLogic, self).initUI()
         self.display_initial()
         for i in self.list_checkbox_channel:
@@ -159,6 +160,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         cache = [(hex(i)[2:].upper()).zfill(16) for i in cache_temp]
         data_lineedit = '%16s-%16s-%16s' % (cache[0], cache[1], cache[2])
         self.lineedit_custom_select_num.setText(data_lineedit)
+
 
 if __name__ == '__main__':
     import sys

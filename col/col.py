@@ -47,8 +47,8 @@ class MainWindow(WindowMain):
         self.window_main_option.show()
 
     def graph_show(self):
-        self.window_main_graph = WindowGraphShowLogic(self)
-        self.window_main_graph.show()
+        self.window_graph_show = WindowGraphShowLogic(self)
+        self.window_graph_show.show()
 
     def prog_about(self):
         self.window_prog_about = WindowAboutLogic(self)
@@ -57,6 +57,12 @@ class MainWindow(WindowMain):
     def prog_help(self):
         self.window_prog_help = WindowHelpLogic(self)
         self.window_prog_help.show()
+
+    def pic_save(self):
+        if not self.window_graph_show.isClosed():
+            pass
+
+
 
 
 

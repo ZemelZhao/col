@@ -21,7 +21,12 @@ __Version__ = 1.0
 class WindowGraphShow(QWidget):
     def __init__(self):
         super(WindowGraphShow, self).__init__()
+        self.judge_close = True
         self.initUI()
+
+    def show(self):
+        self.judge_close = False
+        super(WindowGraphShow, self).show()
 
     def initUI(self):
         self.setWindowTitle('Graph')
@@ -256,6 +261,13 @@ class WindowGraphShow(QWidget):
         layout_graph_control_button.setAlignment(Qt.AlignBottom)
         layout_graph_control_button.addWidget(self.pushbutton_graph_save)
         layout_graph_control.addWidget(widget_control_button)
+
+    def closeEvent(self, e):
+        self.judge_close = True
+        super(WindowGraphShow, self).closeEvent(e)
+
+    def isClosed(self):
+        return self.judge_close
 
 
 

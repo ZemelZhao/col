@@ -44,7 +44,7 @@ class WindowAbout(QWidget):
         font = QFont()
         font.setFamily('MonoxRegular Bold')
         font.setPointSize(30)
-        label_main_name = QLabel('ShadowSocks')
+        label_main_name = QLabel('COL')
         label_main_name.setFont(font)
         layout_main.addWidget(label_main_name)
 
