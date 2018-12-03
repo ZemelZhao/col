@@ -11,6 +11,7 @@ from logic.window_setting_logic import *
 from logic.window_tinker_logic import *
 from logic.head import Cal
 from base.global_val import GlobalValue
+import pyqtgraph.exporters as ep
 import ctypes
 import numpy as np
 import time
@@ -20,11 +21,18 @@ __Version__ = 1.0
 
 class MainWindow(WindowMain):
     def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
+        myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.initial_setting()
         self.daemon_self = daemon_main
         self.daemon_tcp_com = daemon_tcp_com
         self.status_tcp_com = status_tcp_com
         self.data_global = data_global
+
+        time_cache = time.localtime(time.time())
+        self.temp_graph_num = 0
+        self.dir_save = '%4d%02d%02d%02d%02d%02d' % (time_cache[0], time_cache[1], time_cache[2],
+                                                       time_cache[3], time_cache[4], time_cache[5])
+        os.mkdir(os.path.join(myFolder, 'save', self.dir_save))
         super(MainWindow, self).__init__()
 
     def initial_setting(self):
@@ -60,10 +68,21 @@ class MainWindow(WindowMain):
 
     def pic_save(self):
         if not self.window_graph_show.isClosed():
-            pass
+            myFolder = os.path.split(os.path.realpath(__file__))[0]
+            dict_list_channel = {'001 - 032': 0,
+                                 '033 - 064': 1,
+                                 '065 - 096': 2,
+                                 '097 - 128': 3,
+                                 '129 - 160': 4,
+                                 '161 - 192': 5,
+                                 'Custom': 6}
 
-
-
+            exporter = ep.ImageExporter(self.window_graph_show.list_graph_show[dict_list_channel[
+                self.window_graph_show.list_channel.currentItem().text()]].plotItem)
+            if exporter.parameters()['height'] < 800:
+                exporter.parameters()['height'] = 800
+            exporter.export(os.path.join(myFolder, 'save', self.dir_save, 'temp%d.png'% self.temp_graph_num))
+            self.temp_graph_num += 1
 
 
 class MainCom(mp.Process):
