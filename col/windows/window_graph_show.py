@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from PyQt5.QtCore import Qt, QSize, QRect
 from PyQt5.QtGui import QIcon, QColor, QFont
 from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,

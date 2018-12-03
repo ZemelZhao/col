@@ -4,20 +4,24 @@ import sys
 import os
 import configparser
 import shutil
+import multiprocessing as mp
 from windows.window_main import WindowMain
 from logic.window_graph_show_logic import *
 from logic.window_setting_logic import *
 from logic.window_tinker_logic import *
+from logic.head import Cal
+import ctypes
 import numpy as np
 import time
 
 __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
-class Main(WindowMain):
-    def __init__(self):
+class MainWindow(WindowMain):
+    def __init__(self, daemon):
         self.initial_setting()
-        super(Main, self).__init__()
+        self.daemon = daemon
+        super(MainWindow, self).__init__()
 
     def initial_setting(self):
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -32,6 +36,7 @@ class Main(WindowMain):
         self.path_temp = os.path.join(self.myFolder, '.temp')
         shutil.rmtree(self.path_temp)
         os.makedirs(self.path_temp)
+        self.daemon.value = False
 
     def main_option(self):
         self.window_main_option = WindowOptionLogic(self)
@@ -50,12 +55,27 @@ class Main(WindowMain):
         self.window_prog_help.show()
 
 
+class MainCom(mp.Process):
+    def __init__(self, daemon):
+        super(MainCom, self).__init__()
+        self.daemon = daemon
+        pass
+
+    def run(self):
+        while self.daemon.value:
+            print('hello world')
+            time.sleep(0.5)
+
+
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication
+    daemon = mp.Value('b', True)
+    com = MainCom(daemon)
     app = QApplication(sys.argv)
-    win = Main()
+    win = MainWindow(daemon)
     win.show()
+    com.start()
     sys.exit(app.exec_())
 
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import platform
 import os
 import sys
@@ -8,12 +9,11 @@ from ctypes import *
 import scipy.signal as sg
 import configparser
 import time
-myFolder = os.path.split(os.path.realpath(__file__))[0]
-sys.path.append(os.path.join(myFolder, os.pardir))
 
 class Cal(mp.Process):
     def __init__(self):
         super(Cal, self).__init__()
+        myFolder = os.path.join(os.pardir, 'logic')
         if platform.system() == 'Windows':
             ddl_path = os.path.join(myFolder, 'cal.ddl')
         elif platform.system() == 'Linux':
