@@ -105,11 +105,13 @@ class MainCom(mp.Process):
                 print('hello world')
 
 class ProcessMonitor(mp.Process):
-    def __init__(self):
+    def __init__(self, daemon_main):
         super(ProcessMonitor, self).__init__()
+        self.daemon_main = daemon_main
 
     def run(self):
-        pass
+        while self.daemon_main.value:
+            pass
 
 
 if __name__ == '__main__':
@@ -120,7 +122,7 @@ if __name__ == '__main__':
     status_tcp_com = mp.Value('b', False)
     data_global = GlobalValue()
     com = MainCom(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
-    mon = ProcessMonitor()
+    mon = ProcessMonitor(daemon_main)
     app = QApplication(sys.argv)
     win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
     win.show()
