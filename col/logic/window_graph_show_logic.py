@@ -8,11 +8,14 @@ myFolder = os.path.split(os.path.realpath(__file__))[0]
 sys.path.append(os.path.join(myFolder, os.path.pardir))
 from windows.window_graph_show import WindowGraphShow
 from PyQt5.QtCore import pyqtSignal, QObject
+
 import pyqtgraph as pg
 import os
+import pyqtgraph.exporters as ep
 myFolder = os.path.split(os.path.realpath(__file__))[0]
-sys.path.append(os.path.join(myFolder, os.pardir, 'config'))
+sys.path.append(os.path.join(myFolder, os.pardir, 'base'))
 from widget import CustomAxis
+from global_val import GlobalValue
 #pg.setConfigOption('crashWarning', True)
 
 import numpy as np
@@ -22,7 +25,7 @@ __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
 class WindowGraphShowLogic(WindowGraphShow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, dir_save=None, data_global=None):
         self.parent = parent
         if self.parent == None:
             self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -36,6 +39,8 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         super(WindowGraphShowLogic, self).__init__()
         self.checkbox_clickedable = True
+        self.dir_save = dir_save
+        self.data_global = data_global
 
     def initUI(self):
         self.config_ini_read()
@@ -45,6 +50,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         for i in self.list_checkbox_channel:
             i.stateChanged.connect(self.action_checkbox_channel_choose)
         self.pushbutton_custom_select_num.clicked.connect(self.action_pushbutton_custom_select_num)
+        self.pushbutton_graph_save.clicked.connect(self.action_pushbutton_graph_save)
 
     def config_ini_read(self):
         config_ini = configparser.ConfigParser()
@@ -161,6 +167,22 @@ class WindowGraphShowLogic(WindowGraphShow):
         data_lineedit = '%16s-%16s-%16s' % (cache[0], cache[1], cache[2])
         self.lineedit_custom_select_num.setText(data_lineedit)
 
+    def action_pushbutton_graph_save(self, e):
+        myFolder = os.path.split(os.path.realpath(__file__))[0]
+        dict_list_channel = {'001 - 032': 0,
+                             '033 - 064': 1,
+                             '065 - 096': 2,
+                             '097 - 128': 3,
+                             '129 - 160': 4,
+                             '161 - 192': 5,
+                             'Custom': 6}
+
+        exporter = ep.ImageExporter(self.list_graph_show[dict_list_channel[
+            self.list_channel.currentItem().text()]].plotItem)
+        if exporter.parameters()['height'] < 800:
+            exporter.parameters()['height'] = 800
+        exporter.export(os.path.join(myFolder, os.path.pardir, 'save', self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
+        self.data_global.draw_save_global += 1
 
 if __name__ == '__main__':
     import sys

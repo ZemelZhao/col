@@ -29,7 +29,6 @@ class MainWindow(WindowMain):
         self.data_global = data_global
 
         time_cache = time.localtime(time.time())
-        self.temp_graph_num = 0
         self.dir_save = '%4d%02d%02d%02d%02d%02d' % (time_cache[0], time_cache[1], time_cache[2],
                                                        time_cache[3], time_cache[4], time_cache[5])
         os.mkdir(os.path.join(myFolder, 'save', self.dir_save))
@@ -55,7 +54,7 @@ class MainWindow(WindowMain):
         self.window_main_option.show()
 
     def graph_show(self):
-        self.window_graph_show = WindowGraphShowLogic(self)
+        self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
         self.window_graph_show.show()
 
     def prog_about(self):
@@ -81,8 +80,8 @@ class MainWindow(WindowMain):
                 self.window_graph_show.list_channel.currentItem().text()]].plotItem)
             if exporter.parameters()['height'] < 800:
                 exporter.parameters()['height'] = 800
-            exporter.export(os.path.join(myFolder, 'save', self.dir_save, 'temp%d.png'% self.temp_graph_num))
-            self.temp_graph_num += 1
+            exporter.export(os.path.join(myFolder, 'save', self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
+            self.data_global.draw_save_global += 1
 
 
 class MainCom(mp.Process):
