@@ -5,6 +5,7 @@ import os
 import configparser
 import shutil
 import multiprocessing as mp
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from windows.window_main import WindowMain
 from logic.window_graph_show_logic import *
 from logic.window_setting_logic import *
@@ -20,6 +21,7 @@ __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
 class MainWindow(WindowMain):
+    state = pyqtSignal(bool)
     def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.initial_setting()
@@ -47,22 +49,27 @@ class MainWindow(WindowMain):
         self.path_temp = os.path.join(self.myFolder, '.temp')
         shutil.rmtree(self.path_temp)
         os.makedirs(self.path_temp)
+        self.state.emit(False)
         self.daemon_self.value = False
 
     def main_option(self):
         self.window_main_option = WindowOptionLogic(self)
+        self.state.connect(self.window_main_option.close)
         self.window_main_option.show()
 
     def graph_show(self):
         self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
+        self.state.connect(self.window_graph_show.close)
         self.window_graph_show.show()
 
     def prog_about(self):
-        self.window_prog_about = WindowAboutLogic(self)
+        self.window_prog_about = WindowAboutLogic()
+        self.state.connect(self.window_prog_about.close)
         self.window_prog_about.show()
 
     def prog_help(self):
         self.window_prog_help = WindowHelpLogic(self)
+        self.state.connect(self.window_prog_help.close)
         self.window_prog_help.show()
 
     def pic_save(self):
@@ -84,25 +91,26 @@ class MainWindow(WindowMain):
             self.data_global.draw_save_global += 1
 
 
-class MainCom(mp.Process):
+class MainCom(QObject, mp.Process):
     def __init__(self, data_global, daemon_main, daemon_self, status_self):
         super(MainCom, self).__init__()
         self.data_global = data_global
         self.daemon_main = daemon_main
         self.daemon_self = daemon_self
         self.status_self = status_self
-        self.first_judge = True
-        pass
+        self.judge = True
 
     def run(self):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
-        while self.daemon_main.value:
-            time.sleep(0.3)
-            while self.daemon_self.value:
-                if self.first_judge:
-                    self.first_judge = False
-                print('hello world')
+        while self.judge:
+            print('hello')
+            time.sleep(0.5)
+
+    @pyqtSlot(bool)
+    def closeSignalRec(self, e):
+        if not e:
+            self.terminate()
 
 class ProcessMonitor(mp.Process):
     def __init__(self, daemon_main):
@@ -112,6 +120,7 @@ class ProcessMonitor(mp.Process):
     def run(self):
         while self.daemon_main.value:
             pass
+
 
 
 if __name__ == '__main__':
@@ -125,6 +134,8 @@ if __name__ == '__main__':
     mon = ProcessMonitor(daemon_main)
     app = QApplication(sys.argv)
     win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
+    win.state.connect(com.closeSignalRec)
+
     win.show()
     com.start()
     mon.start()
