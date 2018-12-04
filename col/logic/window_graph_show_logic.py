@@ -168,7 +168,8 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.lineedit_custom_select_num.setText(data_lineedit)
 
     def action_pushbutton_graph_save(self, e):
-        myFolder = os.path.split(os.path.realpath(__file__))[0]
+        if not os.path.exists(self.dir_save):
+            os.mkdir(self.dir_save)
         dict_list_channel = {'001 - 032': 0,
                              '033 - 064': 1,
                              '065 - 096': 2,
@@ -181,7 +182,7 @@ class WindowGraphShowLogic(WindowGraphShow):
             self.list_channel.currentItem().text()]].plotItem)
         if exporter.parameters()['height'] < 800:
             exporter.parameters()['height'] = 800
-        exporter.export(os.path.join(myFolder, os.path.pardir, 'save', self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
+        exporter.export(os.path.join(self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
         self.data_global.draw_save_global += 1
 
 if __name__ == '__main__':

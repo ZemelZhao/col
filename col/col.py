@@ -6,6 +6,7 @@ import configparser
 import shutil
 import multiprocessing as mp
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QMessageBox
 from windows.window_main import WindowMain
 from logic.window_graph_show_logic import *
 from logic.window_setting_logic import *
@@ -33,7 +34,7 @@ class MainWindow(WindowMain):
         time_cache = time.localtime(time.time())
         self.dir_save = '%4d%02d%02d%02d%02d%02d' % (time_cache[0], time_cache[1], time_cache[2],
                                                        time_cache[3], time_cache[4], time_cache[5])
-        os.mkdir(os.path.join(myFolder, 'save', self.dir_save))
+        self.dir_save = os.path.join(myFolder, 'save', self.dir_save)
         super(MainWindow, self).__init__()
 
     def initial_setting(self):
@@ -74,7 +75,8 @@ class MainWindow(WindowMain):
 
     def pic_save(self):
         if not self.window_graph_show.isClosed():
-            myFolder = os.path.split(os.path.realpath(__file__))[0]
+            if not os.path.exists(self.dir_save):
+                os.mkdir(self.dir_save)
             dict_list_channel = {'001 - 032': 0,
                                  '033 - 064': 1,
                                  '065 - 096': 2,
@@ -87,40 +89,54 @@ class MainWindow(WindowMain):
                 self.window_graph_show.list_channel.currentItem().text()]].plotItem)
             if exporter.parameters()['height'] < 800:
                 exporter.parameters()['height'] = 800
-            exporter.export(os.path.join(myFolder, 'save', self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
+            exporter.export(os.path.join(self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
             self.data_global.draw_save_global += 1
+
+    pyqtSlot(int)
+    def show_warning(self, e):
+        if e == 0:
+            QMessageBox.warning(self, 'Warning',
+                                'TCP/IP cannot connected\n Please Check!',
+                                QMessageBox.Ok)
+        else:
+            pass
 
 
 class MainCom(QObject, mp.Process):
+    state_tcp_ip = pyqtSignal(int)
     def __init__(self, data_global, daemon_main, daemon_self, status_self):
         super(MainCom, self).__init__()
         self.data_global = data_global
         self.daemon_main = daemon_main
         self.daemon_self = daemon_self
         self.status_self = status_self
-        self.judge = True
 
     def run(self):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
-        while self.judge:
-            print('hello')
-            time.sleep(0.5)
+        print('hello')
+        while True:
+            time.sleep(0.3)
+            pass
 
     @pyqtSlot(bool)
     def closeSignalRec(self, e):
         if not e:
             self.terminate()
 
-class ProcessMonitor(mp.Process):
+class ProcessMonitor(QObject, mp.Process):
     def __init__(self, daemon_main):
         super(ProcessMonitor, self).__init__()
         self.daemon_main = daemon_main
 
     def run(self):
-        while self.daemon_main.value:
+        while True:
             pass
 
+    @pyqtSlot(bool)
+    def closeSignalRec(self, e):
+        if not e:
+            self.terminate()
 
 
 if __name__ == '__main__':
@@ -135,6 +151,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
     win.state.connect(com.closeSignalRec)
+    win.state.connect(mon.closeSignalRec)
+    com.state_tcp_ip.connect(win.show_warning)
 
     win.show()
     com.start()

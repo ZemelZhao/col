@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,
                              QListWidgetItem, QLabel, QPushButton, QTabWidget,
                              QLineEdit, QRadioButton, QTextEdit, QVBoxLayout,
                              QGroupBox, QComboBox, QCheckBox, QSpinBox,
-                             QGridLayout, QLCDNumber, QMainWindow, QAction)
+                             QGridLayout, QLCDNumber, QMainWindow, QAction,
+                             QMessageBox)
 import os
 import sys
 myFolder = os.path.split(os.path.realpath(__file__))[0]
