@@ -8,7 +8,7 @@ import multiprocessing as mp
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QMessageBox
 from windows.window_main import WindowMain
-from logic.window_graph_show_logic import *
+from logic.window_graph_show_all_logic import *
 from logic.window_setting_logic import *
 from logic.window_tinker_logic import *
 from logic.head import Cal

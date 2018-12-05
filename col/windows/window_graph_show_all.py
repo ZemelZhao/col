@@ -36,13 +36,12 @@ class WindowGraphShow(QWidget):
         """# layout_scroll"""
         layout_scroll = QHBoxLayout()
         self.scroll_area_widget = QWidget()
-        self.scroll_area_widget.setMinimumSize(804, 2000)
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidget(self.scroll_area_widget)
 
         layout_scroll_area = QHBoxLayout()
-        self.widget_graph = PlotWidgetCol()
-        layout_scroll_area.addWidget(self.widget_graph)
+        self.graph_show = PlotWidgetCol()
+        layout_scroll_area.addWidget(self.graph_show)
         self.scroll_area_widget.setLayout(layout_scroll_area)
 
         layout_scroll.addWidget(self.scroll_area)
@@ -72,8 +71,16 @@ class WindowGraphShow(QWidget):
                                                max-height: 80px;
                                                }
                                                """)
-        self.pushbutton_graph_save = QPushButton("Save")
+        self.pushbutton_graph_save = QPushButton("Save Picture")
         self.pushbutton_graph_save.setStyleSheet("""
+                                                 QPushButton{
+                                                 min-width: 150px;
+                                                 min-height: 60px;
+                                                 }
+                                                 """)
+
+        self.pushbutton_data_save = QPushButton("Save Data")
+        self.pushbutton_data_save.setStyleSheet("""
                                                  QPushButton{
                                                  min-width: 150px;
                                                  min-height: 60px;
@@ -87,6 +94,7 @@ class WindowGraphShow(QWidget):
         layout_control.addWidget(self.lcdnumber_countdown)
         layout_control.addWidget(self.lcdnumber_countdown_num)
         layout_control.addWidget(widget)
+        layout_control.addWidget(self.pushbutton_data_save)
         layout_control.addWidget(self.pushbutton_graph_save)
 
 

@@ -72,13 +72,17 @@ class WindowGraphShowLogic(WindowGraphShow):
         y = 80*np.random.normal(size=1000)
 
         for i in range(self.channel_num * 2):
-            self.list_graph_show[i].setRange(yRange=[32*i + 2, 32*(i + 1)])
+            self.list_graph_show[i].setRange(yRange=[32*i, 32*(i + 1) + 1], padding=0)
+            yaxis = self.list_graph_show[i].getAxis('left')
+            ticks = range(32*i + 1, 32*(i+1) + 1)
+            yaxis.setTicks([[(i, str(i)) for i in ticks]])
             self.list_graph_show[i].plot(x, y)
         for i in range(self.channel_num*2, 6):
             img = pg.ImageItem(255*np.random.normal(1, size=(666, 666)))
             self.list_graph_show[i].setTitle('No such Channels')
             self.list_graph_show[i].addItem(img)
         self.list_graph_show[-1].setRange(yRange=[2, 32])
+
 
     def action_pushbutton_custom_select_num(self):
         self.data_lineedit_check()

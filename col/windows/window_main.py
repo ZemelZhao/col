@@ -14,7 +14,7 @@ myFolder = os.path.split(os.path.realpath(__file__))[0]
 sys.path.append(myFolder)
 
 from .window_setting import WindowOption
-from .window_graph_show import WindowGraphShow
+from .window_graph_show_all import WindowGraphShow
 from .window_tinker import WindowAbout, WindowHelp
 import os
 import pyqtgraph as pg
