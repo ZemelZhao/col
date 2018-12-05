@@ -68,6 +68,7 @@ class MainWindow(WindowMain):
         sub.setWidget(self.window_graph_show)
         self.mdi.addSubWindow(sub)
         self.signal_config_refresh.connect(self.window_graph_show.updata_config)
+        self.window_graph_show.signal_pic_save.connect(self.pic_save)
         self.window_graph_show.show()
 
     def prog_about(self):

@@ -7,7 +7,7 @@ import configparser
 myFolder = os.path.split(os.path.realpath(__file__))[0]
 sys.path.append(os.path.join(myFolder, os.path.pardir))
 from windows.window_graph_show_all import WindowGraphShow
-from PyQt5.QtCore import pyqtSignal, QObject, pyqtSlot
+from PyQt5.QtCore import pyqtSignal, QObject, pyqtSlot, QTimer
 
 import pyqtgraph as pg
 import os
@@ -25,6 +25,7 @@ __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
 class WindowGraphShowLogic(WindowGraphShow):
+    signal_pic_save = pyqtSignal(bool)
     def __init__(self, parent=None, dir_save=None, data_global=None):
         self.parent = parent
         if self.parent == None:
@@ -38,6 +39,8 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'config.ini'), os.path.join(self.path_temp, '.config.ini'))
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.judge_close = True
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update)
         super(WindowGraphShowLogic, self).__init__()
 
     def show(self, *arg, **kwarg):
@@ -48,6 +51,8 @@ class WindowGraphShowLogic(WindowGraphShow):
     def initUI(self):
         super(WindowGraphShowLogic, self).initUI()
         self.updata_config()
+        self.pushbutton_graph_save.clicked.connect(self.graph_save)
+        self.pushbutton_data_save.clicked.connect(self.data_save)
 
     def config_ini_read(self):
         config_ini = configparser.ConfigParser()
@@ -63,10 +68,28 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.judge_close = True
         super(WindowGraphShow, self).closeEvent(e)
 
+    def graph_save(self):
+        self.signal_pic_save.emit(True)
 
-    @pyqtSlot(bool)
-    def update_graph(self, e):
+    def data_save(self):
         pass
+
+    def update(self):
+        self.update_graph
+        self.update_lcd
+
+
+    def update_graph(self):
+        pass
+
+    def update_lcd(self):
+        pass
+
+    def startTimer(self):
+        self.timer.start(1000)
+
+    def stopTimer(self):
+        self.timer.stop()
 
     @pyqtSlot(bool)
     def updata_config(self, *arg):
