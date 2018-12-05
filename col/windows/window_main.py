@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,
                              QLineEdit, QRadioButton, QTextEdit, QVBoxLayout,
                              QGroupBox, QComboBox, QCheckBox, QSpinBox,
                              QGridLayout, QLCDNumber, QMainWindow, QAction,
-                             QMessageBox, QMdiArea, QMdiSubWindow)
+                             QMessageBox, QMdiArea, QMdiSubWindow, QStatusBar)
 import os
 import sys
 myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -77,6 +77,8 @@ class WindowMain(QMainWindow):
 
         self.mdi = QMdiArea()
         self.setCentralWidget(self.mdi)
+
+        self.statusBar().showMessage('Thanks to use Col')
 
     def main_option(self):
         self.window_main_option.show()

@@ -25,6 +25,7 @@ __Version__ = 1.0
 class MainWindow(WindowMain):
     signal_state = pyqtSignal(QCloseEvent)
     signal_config_refresh = pyqtSignal(bool)
+    signal_pic_save = pyqtSignal([pg.graphicsItems.PlotItem.PlotItem, str])
 
     def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -83,19 +84,7 @@ class MainWindow(WindowMain):
         if not self.window_graph_show.isClosed():
             if not os.path.exists(self.dir_save):
                 os.mkdir(self.dir_save)
-            dict_list_channel = {'001 - 032': 0,
-                                 '033 - 064': 1,
-                                 '065 - 096': 2,
-                                 '097 - 128': 3,
-                                 '129 - 160': 4,
-                                 '161 - 192': 5,
-                                 'Custom': 6}
-
-            exporter = ep.ImageExporter(self.window_graph_show.graph_show.plotItem)
-            if exporter.parameters()['height'] < 800:
-                exporter.parameters()['height'] = 800
-            exporter.export(os.path.join(self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
-            self.data_global.draw_save_global += 1
+            self.signal_pic_save.emit(self.window_graph_show.graph_show, self.dir_save)
 
     @pyqtSlot(int)
     def show_warning(self, e):
@@ -109,13 +98,16 @@ class MainWindow(WindowMain):
     def slot_refresh_config(self, e):
         self.signal_config_refresh.emit(True)
 
+    @pyqtSlot(str)
+    def slot_status_bar_changed(self, e):
+        self.statusBar().showMessage(e)
+
 
 class MainCom(QObject, mp.Process):
     state_tcp_ip = pyqtSignal(int)
-    def __init__(self, data_global, daemon_main, daemon_self, status_self):
+    def __init__(self, data_global, daemon_self, status_self):
         super(MainCom, self).__init__()
         self.data_global = data_global
-        self.daemon_main = daemon_main
         self.daemon_self = daemon_self
         self.status_self = status_self
 
@@ -130,9 +122,8 @@ class MainCom(QObject, mp.Process):
         self.terminate()
 
 class ProcessMonitor(QObject, mp.Process):
-    def __init__(self, daemon_main):
+    def __init__(self):
         super(ProcessMonitor, self).__init__()
-        self.daemon_main = daemon_main
 
     def run(self):
         while True:
@@ -141,6 +132,33 @@ class ProcessMonitor(QObject, mp.Process):
     def closeEvent(self, e):
         self.terminate()
 
+class ProcessSave(QObject, mp.Process):
+    signal_state_save = pyqtSignal(str)
+    def __init__(self, data_global):
+        super(ProcessSave, self).__init__()
+        self.data_global = data_global
+
+    def run(self):
+        while True:
+            time.sleep(0.2)
+
+    def closeEvent(self, e):
+        self.terminate()
+
+    @pyqtSlot(pg.graphicsItems.PlotItem.PlotItem, str)
+
+    def save_pic(self, e0, e1):
+        try:
+            exporter = ep.ImageExporter(e0.plotItem)
+            if exporter.parameters()['height'] < 800:
+                exporter.parameters()['height'] = 800
+            exporter.export(os.path.join(e1, 'temp%d.png'% self.data_global.draw_save_global))
+            self.data_global.draw_save_global += 1
+            self.signal_state_save.emit('Picture Saved Successfully')
+        except:
+            self.signal_state_save.emit('Picture Saved Failed')
+        finally:
+            pass
 
 if __name__ == '__main__':
     import sys
@@ -149,17 +167,23 @@ if __name__ == '__main__':
     daemon_tcp_com = mp.Value('b', False)
     status_tcp_com = mp.Value('b', False)
     data_global = GlobalValue()
-    com = MainCom(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
-    mon = ProcessMonitor(daemon_main)
+    com = MainCom(data_global, daemon_tcp_com, status_tcp_com)
+    mon = ProcessMonitor()
+    sav = ProcessSave(data_global)
     app = QApplication(sys.argv)
     win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
+
     win.signal_state.connect(com.closeEvent)
     win.signal_state.connect(mon.closeEvent)
+    win.signal_state.connect(sav.closeEvent)
+    win.signal_pic_save.connect(sav.save_pic)
     com.state_tcp_ip.connect(win.show_warning)
+    sav.signal_state_save.connect(win.slot_status_bar_changed)
 
     win.show()
     com.start()
     mon.start()
+    sav.start()
     sys.exit(app.exec_())
 
 
