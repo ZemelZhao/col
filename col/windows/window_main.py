@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QWidget, QListWidget, QStackedWidget, QHBoxLayout,
                              QLineEdit, QRadioButton, QTextEdit, QVBoxLayout,
                              QGroupBox, QComboBox, QCheckBox, QSpinBox,
                              QGridLayout, QLCDNumber, QMainWindow, QAction,
-                             QMessageBox)
+                             QMessageBox, QMdiArea, QMdiSubWindow)
 import os
 import sys
 myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -30,7 +30,7 @@ class WindowMain(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.resize(1100, 600)
+        self.resize(1100, 900)
         self.setWindowTitle('Main')
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.path_resource = os.path.join(myFolder, os.pardir, 'resource')
@@ -75,10 +75,16 @@ class WindowMain(QMainWindow):
         self.toolbar_tinker.addAction(self.action_help)
         self.toolbar_tinker.addAction(self.action_about)
 
+        self.mdi = QMdiArea()
+        self.setCentralWidget(self.mdi)
+
     def main_option(self):
         self.window_main_option.show()
 
     def graph_show(self):
+        sub = QMdiSubWindow()
+        sub.setWidget(self.window_graph_show)
+        self.mdi.addSubWindow(sub)
         self.window_graph_show.show()
 
     def prog_about(self):

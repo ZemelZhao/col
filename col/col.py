@@ -6,7 +6,8 @@ import configparser
 import shutil
 import multiprocessing as mp
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QMdiSubWindow
+from PyQt5.QtGui import QCloseEvent
 from windows.window_main import WindowMain
 from logic.window_graph_show_all_logic import *
 from logic.window_setting_logic import *
@@ -22,7 +23,9 @@ __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
 class MainWindow(WindowMain):
-    state = pyqtSignal(bool)
+    signal_state = pyqtSignal(QCloseEvent)
+    signal_config_refresh = pyqtSignal(bool)
+
     def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.initial_setting()
@@ -50,27 +53,30 @@ class MainWindow(WindowMain):
         self.path_temp = os.path.join(self.myFolder, '.temp')
         shutil.rmtree(self.path_temp)
         os.makedirs(self.path_temp)
-        self.state.emit(False)
-        self.daemon_self.value = False
+        self.signal_state.emit(item)
 
     def main_option(self):
         self.window_main_option = WindowOptionLogic(self)
-        self.state.connect(self.window_main_option.close)
+        self.signal_state.connect(self.window_main_option.close)
+        self.window_main_option.pushbutton_ok_page1.clicked.connect(self.slot_refresh_config)
         self.window_main_option.show()
 
     def graph_show(self):
         self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
-        self.state.connect(self.window_graph_show.close)
+        sub = QMdiSubWindow()
+        sub.setWidget(self.window_graph_show)
+        self.mdi.addSubWindow(sub)
+        self.signal_config_refresh.connect(self.window_graph_show.updata_config)
         self.window_graph_show.show()
 
     def prog_about(self):
         self.window_prog_about = WindowAboutLogic()
-        self.state.connect(self.window_prog_about.close)
+        self.signal_state.connect(self.window_prog_about.close)
         self.window_prog_about.show()
 
     def prog_help(self):
         self.window_prog_help = WindowHelpLogic(self)
-        self.state.connect(self.window_prog_help.close)
+        self.signal_state.connect(self.window_prog_help.close)
         self.window_prog_help.show()
 
     def pic_save(self):
@@ -85,14 +91,13 @@ class MainWindow(WindowMain):
                                  '161 - 192': 5,
                                  'Custom': 6}
 
-            exporter = ep.ImageExporter(self.window_graph_show.list_graph_show[dict_list_channel[
-                self.window_graph_show.list_channel.currentItem().text()]].plotItem)
+            exporter = ep.ImageExporter(self.window_graph_show.graph_show.plotItem)
             if exporter.parameters()['height'] < 800:
                 exporter.parameters()['height'] = 800
             exporter.export(os.path.join(self.dir_save, 'temp%d.png'% self.data_global.draw_save_global))
             self.data_global.draw_save_global += 1
 
-    pyqtSlot(int)
+    @pyqtSlot(int)
     def show_warning(self, e):
         if e == 0:
             QMessageBox.warning(self, 'Warning',
@@ -100,6 +105,9 @@ class MainWindow(WindowMain):
                                 QMessageBox.Ok)
         else:
             pass
+
+    def slot_refresh_config(self, e):
+        self.signal_config_refresh.emit(True)
 
 
 class MainCom(QObject, mp.Process):
@@ -114,15 +122,12 @@ class MainCom(QObject, mp.Process):
     def run(self):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
-        print('hello')
         while True:
             time.sleep(0.3)
             pass
 
-    @pyqtSlot(bool)
-    def closeSignalRec(self, e):
-        if not e:
-            self.terminate()
+    def closeEvent(self, e):
+        self.terminate()
 
 class ProcessMonitor(QObject, mp.Process):
     def __init__(self, daemon_main):
@@ -133,10 +138,8 @@ class ProcessMonitor(QObject, mp.Process):
         while True:
             pass
 
-    @pyqtSlot(bool)
-    def closeSignalRec(self, e):
-        if not e:
-            self.terminate()
+    def closeEvent(self, e):
+        self.terminate()
 
 
 if __name__ == '__main__':
@@ -150,8 +153,8 @@ if __name__ == '__main__':
     mon = ProcessMonitor(daemon_main)
     app = QApplication(sys.argv)
     win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
-    win.state.connect(com.closeSignalRec)
-    win.state.connect(mon.closeSignalRec)
+    win.signal_state.connect(com.closeEvent)
+    win.signal_state.connect(mon.closeEvent)
     com.state_tcp_ip.connect(win.show_warning)
 
     win.show()
