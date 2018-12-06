@@ -47,7 +47,6 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.judge_close = False
         super(WindowGraphShowLogic, self).show(*arg, **kwarg)
 
-
     def initUI(self):
         super(WindowGraphShowLogic, self).initUI()
         self.updata_config()
@@ -55,6 +54,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.pushbutton_data_save.clicked.connect(self.data_save)
 
     def config_ini_read(self):
+        self.startTimer()
         config_ini = configparser.ConfigParser()
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, os.path.pardir, '.temp', '.config.ini')
@@ -66,6 +66,7 @@ class WindowGraphShowLogic(WindowGraphShow):
 
     def closeEvent(self, e):
         self.judge_close = True
+        self.stopTimer()
         super(WindowGraphShow, self).closeEvent(e)
 
     def graph_save(self):
@@ -77,7 +78,6 @@ class WindowGraphShowLogic(WindowGraphShow):
     def update(self):
         self.update_graph
         self.update_lcd
-
 
     def update_graph(self):
         pass
@@ -105,8 +105,6 @@ class WindowGraphShowLogic(WindowGraphShow):
             self.graph_show.addLine(y=i+0.5, pen='k')
         for i in range(1, 11):
             self.graph_show.addLine(x=i, pen='k')
-
-
 
 if __name__ == '__main__':
     import sys

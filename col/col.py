@@ -40,6 +40,7 @@ class MainWindow(WindowMain):
                                                        time_cache[3], time_cache[4], time_cache[5])
         self.dir_save = os.path.join(myFolder, 'save', self.dir_save)
         super(MainWindow, self).__init__()
+        self.window_graph_show = WindowGraphShowLogic()
 
     def initial_setting(self):
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -63,13 +64,14 @@ class MainWindow(WindowMain):
         self.window_main_option.show()
 
     def graph_show(self):
-        self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
-        sub = QMdiSubWindow()
-        sub.setWidget(self.window_graph_show)
-        self.mdi.addSubWindow(sub)
-        self.signal_config_refresh.connect(self.window_graph_show.updata_config)
-        self.window_graph_show.signal_pic_save.connect(self.pic_save)
-        self.window_graph_show.show()
+        if self.window_graph_show.isClosed():
+            self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
+            sub = QMdiSubWindow()
+            sub.setWidget(self.window_graph_show)
+            self.mdi.addSubWindow(sub)
+            self.signal_config_refresh.connect(self.window_graph_show.updata_config)
+            self.window_graph_show.signal_pic_save.connect(self.pic_save)
+            self.window_graph_show.show()
 
     def prog_about(self):
         self.window_prog_about = WindowAboutLogic()
@@ -96,8 +98,6 @@ class MainWindow(WindowMain):
         else:
             pass
 
-    def slot_refresh_config(self, e):
-        self.signal_config_refresh.emit(True)
 
     @pyqtSlot(str)
     def slot_status_bar_changed(self, e):
