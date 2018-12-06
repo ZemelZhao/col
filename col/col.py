@@ -28,8 +28,8 @@ class MainWindow(WindowMain):
     signal_pic_save = pyqtSignal([pg.graphicsItems.PlotItem.PlotItem, str])
 
     def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
-        myFolder = os.path.split(os.path.realpath(__file__))[0]
-        self.initial_setting()
+        super(MainWindow, self).__init__()
+        self.myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.daemon_self = daemon_main
         self.daemon_tcp_com = daemon_tcp_com
         self.status_tcp_com = status_tcp_com
@@ -39,8 +39,8 @@ class MainWindow(WindowMain):
         self.dir_save = '%4d%02d%02d%02d%02d%02d' % (time_cache[0], time_cache[1], time_cache[2],
                                                        time_cache[3], time_cache[4], time_cache[5])
         self.dir_save = os.path.join(myFolder, 'save', self.dir_save)
-        super(MainWindow, self).__init__()
         self.window_graph_show = WindowGraphShowLogic()
+        self.initial_setting()
 
     def initial_setting(self):
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -50,6 +50,8 @@ class MainWindow(WindowMain):
         os.makedirs(self.path_temp)
         shutil.copy(os.path.join(self.path_config, 'config.ini'), os.path.join(self.path_temp, '.config.ini'))
         shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
+        self.slot_refresh_config()
+        self.data_global.draw_data = np.zeros((self.channel_num, 1000))
 
     def closeEvent(self, item):
         self.path_temp = os.path.join(self.myFolder, '.temp')
@@ -66,6 +68,7 @@ class MainWindow(WindowMain):
     def graph_show(self):
         if self.window_graph_show.isClosed():
             self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
+            self.window_graph_show.startTimer()
             sub = QMdiSubWindow()
             sub.setWidget(self.window_graph_show)
             self.mdi.addSubWindow(sub)
@@ -98,6 +101,13 @@ class MainWindow(WindowMain):
         else:
             pass
 
+    def slot_refresh_config(self):
+        config_ini = configparser.ConfigParser()
+        file_config_ini = os.path.join(self.myFolder, '.temp', '.config.ini')
+        config_ini.read(file_config_ini)
+        self.channel_num = int(config_ini['Data']['channel_num'])
+        self.signal_config_refresh.emit(True)
+
 
     @pyqtSlot(str)
     def slot_status_bar_changed(self, e):
@@ -113,11 +123,16 @@ class MainCom(QObject, mp.Process):
         self.status_self = status_self
 
     def run(self):
+        config_ini = configparser.ConfigParser()
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
+        config_ini.read(file_config_ini)
+        channel_num = int(config_ini['Data']['channel_num'])
         while True:
-            time.sleep(0.3)
-            pass
+            data = np.random.normal(size=(channel_num, 200))
+            self.data_global.draw_data = np.hstack((self.data_global.draw_data[:, 200:], data))
+            time.sleep(0.2)
+
 
     def closeEvent(self, e):
         self.terminate()
@@ -138,16 +153,20 @@ class ProcessSave(QObject, mp.Process):
     def __init__(self, data_global):
         super(ProcessSave, self).__init__()
         self.data_global = data_global
+        self.list_action = []
 
     def run(self):
         while True:
-            time.sleep(0.2)
+            if self.list_action:
+                pass
+            else:
+                time.sleep(0.2)
+
 
     def closeEvent(self, e):
         self.terminate()
 
     @pyqtSlot(pg.graphicsItems.PlotItem.PlotItem, str)
-
     def save_pic(self, e0, e1):
         try:
             exporter = ep.ImageExporter(e0.plotItem)

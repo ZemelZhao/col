@@ -39,6 +39,7 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'config.ini'), os.path.join(self.path_temp, '.config.ini'))
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.judge_close = True
+        self.data_global = data_global
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
         super(WindowGraphShowLogic, self).__init__()
@@ -54,7 +55,6 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.pushbutton_data_save.clicked.connect(self.data_save)
 
     def config_ini_read(self):
-        self.startTimer()
         config_ini = configparser.ConfigParser()
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, os.path.pardir, '.temp', '.config.ini')
@@ -76,11 +76,14 @@ class WindowGraphShowLogic(WindowGraphShow):
         pass
 
     def update(self):
-        self.update_graph
-        self.update_lcd
+        self.update_graph()
+        self.update_lcd()
 
     def update_graph(self):
-        pass
+        if self.data_global.draw_data is not None:
+            print(self.data_global.draw_data)
+            for i in range(self.channel_num):
+                self.graph_show.plot(y=self.data_global.draw_data[i, :] + i + 1, pen=(0, 0, 0))
 
     def update_lcd(self):
         pass
@@ -96,21 +99,22 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.config_ini_read()
         self.scroll_area_widget.setMinimumSize(798, self.channel_num*12)
         self.scroll_area_widget.setMaximumSize(798, self.channel_num*12)
-        self.graph_show.setRange(yRange=[0.3, self.channel_num+0.7], xRange=(-0.2, 10.2), padding=0)
+        self.graph_show.setRange(yRange=[0.3, self.channel_num+0.7], xRange=(-20, 1002), padding=0)
         axis_y = self.graph_show.getAxis('left')
         ticks = range(1, self.channel_num+1)
         axis_y.setTicks([[(i, str(i)) for i in ticks]])
         self.graph_show.invertY()
         for i in range(self.channel_num+1):
             self.graph_show.addLine(y=i+0.5, pen='k')
-        for i in range(1, 11):
+        for i in range(0, 1000, 100):
             self.graph_show.addLine(x=i, pen='k')
 
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication
+    data_global = GlobalValue()
     app = QApplication(sys.argv)
-    win = WindowGraphShowLogic()
+    win = WindowGraphShowLogic(data_global=data_global)
     win.show()
     sys.exit(app.exec_())
 
