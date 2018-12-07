@@ -121,21 +121,36 @@ class MainCom(QObject, mp.Process):
         self.shared_data_graph = shared_data_graph
         self.daemon_self = daemon_self
         self.status_self = status_self
+        self.not_change = True
 
     def run(self):
-        config_ini = configparser.ConfigParser()
-        myFolder = os.path.split(os.path.realpath(__file__))[0]
-        file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
-        config_ini.read(file_config_ini)
-        channel_num = int(config_ini['Data']['channel_num'])
+        data_clear = 192*1000*[0]
         while True:
-            num_data = 20
-            num_change = channel_num*num_data
-            self.shared_data_graph[:-num_change] = self.shared_data_graph[num_change:]
-            data = np.random.normal(size=(channel_num, num_data)).reshape(1, -1)
-            self.shared_data_graph[-num_change:] = data[0][:]
-            time.sleep(0.2)
+            time.sleep(0.01)
+            config_ini = configparser.ConfigParser()
+            myFolder = os.path.split(os.path.realpath(__file__))[0]
+            file_config_ini = os.path.join(myFolder, '.temp', '.config.ini')
+            config_ini.read(file_config_ini)
+            channel_num = int(config_ini['Data']['channel_num'])
+            self.shared_data_graph[:] = data_clear[:]
+            self.not_change = True
+            print(channel_num)
+            while self.not_change:
+                print(self.not_change)
+                if not self.not_change:
+                    break
+                num_data = 20
+                graph_data = 1000
+                num_change = channel_num*num_data
+                num_all = channel_num*graph_data
+                self.shared_data_graph[:num_all-num_change] = self.shared_data_graph[num_change:num_all]
+                data = np.random.normal(size=(channel_num, num_data)).reshape(1, -1)
+                self.shared_data_graph[num_all-num_change:num_all] = data[0][:]
+                time.sleep(0.2)
 
+    def statusChange(self):
+        print('hree')
+        self.not_change = False
 
     def closeEvent(self, e):
         self.terminate()
@@ -202,6 +217,7 @@ if __name__ == '__main__':
     win.signal_state.connect(mon.closeEvent)
     win.signal_state.connect(sav.closeEvent)
     win.signal_pic_save.connect(sav.save_pic)
+    win.signal_config_refresh.connect(com.statusChange)
     com.state_tcp_ip.connect(win.show_warning)
     sav.signal_state_save.connect(win.slot_status_bar_changed)
 

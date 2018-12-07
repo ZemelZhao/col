@@ -82,8 +82,9 @@ class WindowGraphShowLogic(WindowGraphShow):
     def update_graph(self):
         data = np.frombuffer(self.shared_data_graph.get_obj())
         data = data.reshape(-1, self.channel_num).T
+        x_data = np.array(1000)
         for i in range(self.channel_num):
-            self.list_curve[i].setData(y=data[i, :] + i + 1, pen=(0, 0, 0))
+            self.list_curve[i].setData(y=data[i, :1000] + i + 1, pen=(0, 0, 0))
 
     def update_lcd(self):
         pass
@@ -106,7 +107,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         axis_y = self.graph_show.getAxis('left')
         xticks = range(pointspersecond, show_time*pointspersecond + 1, pointspersecond)
         yticks = range(1, self.channel_num+1)
-        axis_x.setTicks([[(i, str(i//pointspersecond)) for i in xticks]])
+        axis_x.setTicks([[(i, str(i)) for i in xticks]])
         axis_y.setTicks([[(i, str(i)) for i in yticks]])
         self.graph_show.invertY()
         for i in range(self.channel_num+1):
@@ -118,7 +119,6 @@ class WindowGraphShowLogic(WindowGraphShow):
             self.list_curve.append(self.graph_show.plot())
             self.list_curve[i].setDownsampling(None, None, 'peak')
             self.list_curve[i].setClipToView(True)
-            #self.curve.setRange(yRange=(i+0.5, i+1.5))
 
 if __name__ == '__main__':
     import sys
