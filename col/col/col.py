@@ -27,12 +27,9 @@ class MainWindow(WindowMain):
     signal_config_refresh = pyqtSignal(bool)
     signal_pic_save = pyqtSignal([pg.graphicsItems.PlotItem.PlotItem, str])
 
-    def __init__(self, shared_data_graph, daemon_main, daemon_tcp_com, status_tcp_com):
+    def __init__(self, shared_data_graph):
         super(MainWindow, self).__init__()
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
-        self.daemon_self = daemon_main
-        self.daemon_tcp_com = daemon_tcp_com
-        self.status_tcp_com = status_tcp_com
         self.data_global = GUIValue()
 
         time_cache = time.localtime(time.time())
@@ -116,12 +113,10 @@ class MainWindow(WindowMain):
 
 class MainCom(QObject, mp.Process):
     state_tcp_ip = pyqtSignal(int)
-    def __init__(self, shared_data_graph, daemon_self, status_self):
+    def __init__(self, shared_data_graph, status_change):
         super(MainCom, self).__init__()
         self.shared_data_graph = shared_data_graph
-        self.daemon_self = daemon_self
-        self.status_self = status_self
-        self.not_change = True
+        self.not_change  = status_change
 
     def run(self):
         data_clear = 192*1000*[0]
@@ -133,11 +128,9 @@ class MainCom(QObject, mp.Process):
             config_ini.read(file_config_ini)
             channel_num = int(config_ini['Data']['channel_num'])
             self.shared_data_graph[:] = data_clear[:]
-            self.not_change = True
-            print(channel_num)
-            while self.not_change:
-                print(self.not_change)
-                if not self.not_change:
+            self.not_change.value = True
+            while self.not_change.value:
+                if not self.not_change.value:
                     break
                 num_data = 20
                 graph_data = 1000
@@ -149,7 +142,7 @@ class MainCom(QObject, mp.Process):
                 time.sleep(0.2)
 
     def statusChange(self):
-        self.not_change = False
+        self.not_change.value = False
 
     def closeEvent(self, e):
         self.terminate()
@@ -200,17 +193,14 @@ class ProcessSave(QObject, mp.Process):
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication
-    daemon_main = mp.Value('b', True)
-    daemon_tcp_com = mp.Value('b', False)
-    status_tcp_com = mp.Value('b', False)
-
     shared_data_graph = mp.Array('d', np.array(192*1000*[0]))
+    shared_config_change = mp.Value('b', False)
 
-    com = MainCom(shared_data_graph, daemon_tcp_com, status_tcp_com)
+    com = MainCom(shared_data_graph, shared_config_change)
     mon = ProcessMonitor()
     sav = ProcessSave()
     app = QApplication(sys.argv)
-    win = MainWindow(shared_data_graph, daemon_main, daemon_tcp_com, status_tcp_com)
+    win = MainWindow(shared_data_graph)
 
     win.signal_state.connect(com.closeEvent)
     win.signal_state.connect(mon.closeEvent)

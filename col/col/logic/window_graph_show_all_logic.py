@@ -103,6 +103,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.scroll_area_widget.setMinimumSize(798, self.channel_num*12)
         self.scroll_area_widget.setMaximumSize(798, self.channel_num*12)
         self.graph_show.setRange(yRange=[0.3, self.channel_num+0.7], xRange=(-0.01*pointspersecond, (show_time+0.1)*pointspersecond), padding=0)
+        self.graph_show.clear()
         axis_x = self.graph_show.getAxis('bottom')
         axis_y = self.graph_show.getAxis('left')
         xticks = range(pointspersecond, show_time*pointspersecond + 1, pointspersecond)
