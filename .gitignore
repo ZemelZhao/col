@@ -1,0 +1,17 @@
+#ignore list
+
+# Vim
+*.swp
+*.swn
+*.swo
+
+# python
+**/__pycache__
+
+# C
+*.so
+
+# Me
+**/save/
+**/temp/
+
