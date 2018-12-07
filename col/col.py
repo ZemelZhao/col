@@ -13,7 +13,7 @@ from logic.window_graph_show_all_logic import *
 from logic.window_setting_logic import *
 from logic.window_tinker_logic import *
 from logic.head import Cal
-from base.global_val import GlobalValue
+from base.gui_val import GUIValue
 import pyqtgraph.exporters as ep
 import ctypes
 import numpy as np
@@ -27,19 +27,20 @@ class MainWindow(WindowMain):
     signal_config_refresh = pyqtSignal(bool)
     signal_pic_save = pyqtSignal([pg.graphicsItems.PlotItem.PlotItem, str])
 
-    def __init__(self, data_global, daemon_main, daemon_tcp_com, status_tcp_com):
+    def __init__(self, shared_data_graph, daemon_main, daemon_tcp_com, status_tcp_com):
         super(MainWindow, self).__init__()
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
         self.daemon_self = daemon_main
         self.daemon_tcp_com = daemon_tcp_com
         self.status_tcp_com = status_tcp_com
-        self.data_global = data_global
+        self.data_global = GUIValue()
 
         time_cache = time.localtime(time.time())
         self.dir_save = '%4d%02d%02d%02d%02d%02d' % (time_cache[0], time_cache[1], time_cache[2],
                                                        time_cache[3], time_cache[4], time_cache[5])
-        self.dir_save = os.path.join(myFolder, 'save', self.dir_save)
-        self.window_graph_show = WindowGraphShowLogic()
+        self.dir_save = os.path.join(self.myFolder, 'save', self.dir_save)
+        self.shared_data_graph = shared_data_graph
+        self.window_graph_show = WindowGraphShowLogic(shared_data_graph = self.shared_data_graph)
         self.initial_setting()
 
     def initial_setting(self):
@@ -51,7 +52,6 @@ class MainWindow(WindowMain):
         shutil.copy(os.path.join(self.path_config, 'config.ini'), os.path.join(self.path_temp, '.config.ini'))
         shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.slot_refresh_config()
-        self.data_global.draw_data = np.zeros((self.channel_num, 1000))
 
     def closeEvent(self, item):
         self.path_temp = os.path.join(self.myFolder, '.temp')
@@ -67,7 +67,7 @@ class MainWindow(WindowMain):
 
     def graph_show(self):
         if self.window_graph_show.isClosed():
-            self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.data_global)
+            self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.shared_data_graph)
             self.window_graph_show.startTimer()
             sub = QMdiSubWindow()
             sub.setWidget(self.window_graph_show)
@@ -116,9 +116,9 @@ class MainWindow(WindowMain):
 
 class MainCom(QObject, mp.Process):
     state_tcp_ip = pyqtSignal(int)
-    def __init__(self, data_global, daemon_self, status_self):
+    def __init__(self, shared_data_graph, daemon_self, status_self):
         super(MainCom, self).__init__()
-        self.data_global = data_global
+        self.shared_data_graph = shared_data_graph
         self.daemon_self = daemon_self
         self.status_self = status_self
 
@@ -129,8 +129,11 @@ class MainCom(QObject, mp.Process):
         config_ini.read(file_config_ini)
         channel_num = int(config_ini['Data']['channel_num'])
         while True:
-            data = np.random.normal(size=(channel_num, 200))
-            self.data_global.draw_data = np.hstack((self.data_global.draw_data[:, 200:], data))
+            num_data = 20
+            num_change = channel_num*num_data
+            self.shared_data_graph[:-num_change] = self.shared_data_graph[num_change:]
+            data = np.random.normal(size=(channel_num, num_data)).reshape(1, -1)
+            self.shared_data_graph[-num_change:] = data[0][:]
             time.sleep(0.2)
 
 
@@ -150,10 +153,10 @@ class ProcessMonitor(QObject, mp.Process):
 
 class ProcessSave(QObject, mp.Process):
     signal_state_save = pyqtSignal(str)
-    def __init__(self, data_global):
+    def __init__(self):
         super(ProcessSave, self).__init__()
-        self.data_global = data_global
         self.list_action = []
+        self.graph_no = 0
 
     def run(self):
         while True:
@@ -172,8 +175,8 @@ class ProcessSave(QObject, mp.Process):
             exporter = ep.ImageExporter(e0.plotItem)
             if exporter.parameters()['height'] < 800:
                 exporter.parameters()['height'] = 800
-            exporter.export(os.path.join(e1, 'temp%d.png'% self.data_global.draw_save_global))
-            self.data_global.draw_save_global += 1
+            exporter.export(os.path.join(e1, 'temp%d.png'% self.graph_no))
+            self.graph_no += 1
             self.signal_state_save.emit('Picture Saved Successfully')
         except:
             self.signal_state_save.emit('Picture Saved Failed')
@@ -186,12 +189,14 @@ if __name__ == '__main__':
     daemon_main = mp.Value('b', True)
     daemon_tcp_com = mp.Value('b', False)
     status_tcp_com = mp.Value('b', False)
-    data_global = GlobalValue()
-    com = MainCom(data_global, daemon_tcp_com, status_tcp_com)
+
+    shared_data_graph = mp.Array('d', np.array(192*1000*[0]))
+
+    com = MainCom(shared_data_graph, daemon_tcp_com, status_tcp_com)
     mon = ProcessMonitor()
-    sav = ProcessSave(data_global)
+    sav = ProcessSave()
     app = QApplication(sys.argv)
-    win = MainWindow(data_global, daemon_main, daemon_tcp_com, status_tcp_com)
+    win = MainWindow(shared_data_graph, daemon_main, daemon_tcp_com, status_tcp_com)
 
     win.signal_state.connect(com.closeEvent)
     win.signal_state.connect(mon.closeEvent)
@@ -205,5 +210,3 @@ if __name__ == '__main__':
     mon.start()
     sav.start()
     sys.exit(app.exec_())
-
-

@@ -15,7 +15,7 @@ import pyqtgraph.exporters as ep
 myFolder = os.path.split(os.path.realpath(__file__))[0]
 sys.path.append(os.path.join(myFolder, os.pardir, 'base'))
 from widget import CustomAxis
-from global_val import GlobalValue
+from gui_val import GUIValue
 #pg.setConfigOption('crashWarning', True)
 
 import numpy as np

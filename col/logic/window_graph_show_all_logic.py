@@ -15,7 +15,7 @@ import pyqtgraph.exporters as ep
 myFolder = os.path.split(os.path.realpath(__file__))[0]
 sys.path.append(os.path.join(myFolder, os.pardir, 'base'))
 from widget import CustomAxis
-from global_val import GlobalValue
+from gui_val import GUIValue
 #pg.setConfigOption('crashWarning', True)
 
 import numpy as np
@@ -26,7 +26,7 @@ __Version__ = 1.0
 
 class WindowGraphShowLogic(WindowGraphShow):
     signal_pic_save = pyqtSignal(bool)
-    def __init__(self, parent=None, dir_save=None, data_global=None):
+    def __init__(self, parent=None, dir_save=None, shared_data_graph=None):
         self.parent = parent
         if self.parent == None:
             self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -39,7 +39,7 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'config.ini'), os.path.join(self.path_temp, '.config.ini'))
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.judge_close = True
-        self.data_global = data_global
+        self.shared_data_graph = shared_data_graph
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
         super(WindowGraphShowLogic, self).__init__()
@@ -80,10 +80,10 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.update_lcd()
 
     def update_graph(self):
-        if self.data_global.draw_data is not None:
-            print(self.data_global.draw_data)
-            for i in range(self.channel_num):
-                self.graph_show.plot(y=self.data_global.draw_data[i, :] + i + 1, pen=(0, 0, 0))
+        data = np.frombuffer(self.shared_data_graph.get_obj())
+        data = data.reshape(-1, self.channel_num).T
+        for i in range(self.channel_num):
+            self.list_curve[i].setData(y=data[i, :] + i + 1, pen=(0, 0, 0))
 
     def update_lcd(self):
         pass
@@ -96,25 +96,36 @@ class WindowGraphShowLogic(WindowGraphShow):
 
     @pyqtSlot(bool)
     def updata_config(self, *arg):
+        pointspersecond = 100
+        show_time = 10
         self.config_ini_read()
         self.scroll_area_widget.setMinimumSize(798, self.channel_num*12)
         self.scroll_area_widget.setMaximumSize(798, self.channel_num*12)
-        self.graph_show.setRange(yRange=[0.3, self.channel_num+0.7], xRange=(-20, 1002), padding=0)
+        self.graph_show.setRange(yRange=[0.3, self.channel_num+0.7], xRange=(-0.01*pointspersecond, (show_time+0.1)*pointspersecond), padding=0)
+        axis_x = self.graph_show.getAxis('bottom')
         axis_y = self.graph_show.getAxis('left')
-        ticks = range(1, self.channel_num+1)
-        axis_y.setTicks([[(i, str(i)) for i in ticks]])
+        xticks = range(pointspersecond, show_time*pointspersecond + 1, pointspersecond)
+        yticks = range(1, self.channel_num+1)
+        axis_x.setTicks([[(i, str(i//pointspersecond)) for i in xticks]])
+        axis_y.setTicks([[(i, str(i)) for i in yticks]])
         self.graph_show.invertY()
         for i in range(self.channel_num+1):
             self.graph_show.addLine(y=i+0.5, pen='k')
-        for i in range(0, 1000, 100):
+        for i in range(pointspersecond, show_time*pointspersecond, pointspersecond):
             self.graph_show.addLine(x=i, pen='k')
+        self.list_curve = []
+        for i in range(self.channel_num):
+            self.list_curve.append(self.graph_show.plot())
+            self.list_curve[i].setDownsampling(None, None, 'peak')
+            self.list_curve[i].setClipToView(True)
+            #self.curve.setRange(yRange=(i+0.5, i+1.5))
 
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication
-    data_global = GlobalValue()
+    data_global = GUIValue()
     app = QApplication(sys.argv)
-    win = WindowGraphShowLogic(data_global=data_global)
+    win = WindowGraphShowLogic()
     win.show()
     sys.exit(app.exec_())
 
