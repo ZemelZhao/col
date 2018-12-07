@@ -149,7 +149,6 @@ class MainCom(QObject, mp.Process):
                 time.sleep(0.2)
 
     def statusChange(self):
-        print('hree')
         self.not_change = False
 
     def closeEvent(self, e):
