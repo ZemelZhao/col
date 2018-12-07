@@ -1,8 +1,0 @@
-PyQt5
-scipy
-numpy
-pygrgraph
-configparser
-multiprocessing
-
-
