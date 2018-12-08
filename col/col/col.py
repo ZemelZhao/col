@@ -5,15 +5,16 @@ import os
 import configparser
 import shutil
 import multiprocessing as mp
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer
 from PyQt5.QtWidgets import QMessageBox, QMdiSubWindow
 from PyQt5.QtGui import QCloseEvent
 from windows.window_main import WindowMain
-from logic.window_graph_show_all_logic import *
-from logic.window_setting_logic import *
-from logic.window_tinker_logic import *
+from logic.window_graph_show_all_logic import WindowGraphShowLogic
+from logic.window_setting_logic import WindowOptionLogic
+from logic.window_tinker_logic import WindowHelpLogic, WindowHelpLogic
 from logic.head import Cal
 from base.gui_val import GUIValue
+import pyqtgraph as pg
 import pyqtgraph.exporters as ep
 import ctypes
 import numpy as np
@@ -26,6 +27,7 @@ class MainWindow(WindowMain):
     signal_state = pyqtSignal(QCloseEvent)
     signal_config_refresh = pyqtSignal(bool)
     signal_pic_save = pyqtSignal([pg.graphicsItems.PlotItem.PlotItem, str])
+    signal_start_refresh = pyqtSignal(bool)
 
     def __init__(self, shared_data_graph):
         super(MainWindow, self).__init__()
@@ -37,8 +39,9 @@ class MainWindow(WindowMain):
                                                        time_cache[3], time_cache[4], time_cache[5])
         self.dir_save = os.path.join(self.myFolder, 'save', self.dir_save)
         self.shared_data_graph = shared_data_graph
-        self.window_graph_show = WindowGraphShowLogic(shared_data_graph = self.shared_data_graph)
         self.initial_setting()
+        self.timer_clear_status = QTimer()
+        self.timer_clear_status.timeout.connect(self.slot_status_bar_clear)
 
     def initial_setting(self):
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -63,15 +66,21 @@ class MainWindow(WindowMain):
         self.window_main_option.show()
 
     def graph_show(self):
-        if self.window_graph_show.isClosed():
-            self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.shared_data_graph)
-            self.window_graph_show.startTimer()
-            sub = QMdiSubWindow()
-            sub.setWidget(self.window_graph_show)
-            self.mdi.addSubWindow(sub)
-            self.signal_config_refresh.connect(self.window_graph_show.updata_config)
-            self.window_graph_show.signal_pic_save.connect(self.pic_save)
-            self.window_graph_show.show()
+        try:
+            if self.window_graph_show.isClosed():
+                judge = True
+        except:
+            judge = True
+        finally:
+            if judge:
+                self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.shared_data_graph)
+                self.window_graph_show.startTimer()
+                sub = QMdiSubWindow()
+                sub.setWidget(self.window_graph_show)
+                self.mdi.addSubWindow(sub)
+                self.signal_config_refresh.connect(self.window_graph_show.updata_config)
+                self.window_graph_show.signal_pic_save.connect(self.pic_save)
+                self.window_graph_show.show()
 
     def prog_about(self):
         self.window_prog_about = WindowAboutLogic()
@@ -84,10 +93,19 @@ class MainWindow(WindowMain):
         self.window_prog_help.show()
 
     def pic_save(self):
-        if not self.window_graph_show.isClosed():
-            if not os.path.exists(self.dir_save):
-                os.mkdir(self.dir_save)
-            self.signal_pic_save.emit(self.window_graph_show.graph_show, self.dir_save)
+        try:
+            if not self.window_graph_show.isClosed():
+                judge = False
+                if not os.path.exists(self.dir_save):
+                    os.mkdir(self.dir_save)
+                self.signal_pic_save.emit(self.window_graph_show.graph_show, self.dir_save)
+            else:
+                judge = True
+        except:
+            judge = True
+        finally:
+            if judge:
+                self.slot_status_bar_changed('Please open the graph window')
 
     @pyqtSlot(int)
     def show_warning(self, e):
@@ -109,14 +127,20 @@ class MainWindow(WindowMain):
     @pyqtSlot(str)
     def slot_status_bar_changed(self, e):
         self.statusBar().showMessage(e)
+        self.timer_clear_status.start(1500)
+
+    def slot_status_bar_clear(self):
+        self.statusBar().clearMessage()
+        self.timer_clear_status.stop()
 
 
 class MainCom(QObject, mp.Process):
     state_tcp_ip = pyqtSignal(int)
-    def __init__(self, shared_data_graph, status_change):
+    def __init__(self, shared_data_graph, config_status_change, status_change):
         super(MainCom, self).__init__()
         self.shared_data_graph = shared_data_graph
-        self.not_change  = status_change
+        self.not_change  = config_status_change
+        self.start_ornot = status_change
 
     def run(self):
         data_clear = 192*1000*[0]
@@ -132,14 +156,14 @@ class MainCom(QObject, mp.Process):
             while self.not_change.value:
                 if not self.not_change.value:
                     break
-                num_data = 20
+                num_data = 50
                 graph_data = 1000
                 num_change = channel_num*num_data
                 num_all = channel_num*graph_data
                 self.shared_data_graph[:num_all-num_change] = self.shared_data_graph[num_change:num_all]
                 data = np.random.normal(size=(channel_num, num_data)).reshape(1, -1)
                 self.shared_data_graph[num_all-num_change:num_all] = data[0][:]
-                time.sleep(0.2)
+                time.sleep(0.5)
 
     def statusChange(self):
         self.not_change.value = False
@@ -153,7 +177,7 @@ class ProcessMonitor(QObject, mp.Process):
 
     def run(self):
         while True:
-            pass
+            time.sleep(0.5)
 
     def closeEvent(self, e):
         self.terminate()
@@ -171,7 +195,6 @@ class ProcessSave(QObject, mp.Process):
                 pass
             else:
                 time.sleep(0.2)
-
 
     def closeEvent(self, e):
         self.terminate()
@@ -195,8 +218,9 @@ if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     shared_data_graph = mp.Array('d', np.array(192*1000*[0]))
     shared_config_change = mp.Value('b', False)
+    shared_status_change = mp.Value('b', False)
 
-    com = MainCom(shared_data_graph, shared_config_change)
+    com = MainCom(shared_data_graph, shared_config_change, shared_status_change)
     mon = ProcessMonitor()
     sav = ProcessSave()
     app = QApplication(sys.argv)

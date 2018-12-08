@@ -40,7 +40,7 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.judge_close = True
         self.shared_data_graph = shared_data_graph
-        self.timer = QTimer()
+        self.timer  = QTimer()
         self.timer.timeout.connect(self.update)
         super(WindowGraphShowLogic, self).__init__()
 
@@ -108,7 +108,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         axis_y = self.graph_show.getAxis('left')
         xticks = range(pointspersecond, show_time*pointspersecond + 1, pointspersecond)
         yticks = range(1, self.channel_num+1)
-        axis_x.setTicks([[(i, str(i)) for i in xticks]])
+        axis_x.setTicks([[(i, str(i//pointspersecond)) for i in xticks]])
         axis_y.setTicks([[(i, str(i)) for i in yticks]])
         self.graph_show.invertY()
         for i in range(self.channel_num+1):
@@ -118,7 +118,7 @@ class WindowGraphShowLogic(WindowGraphShow):
         self.list_curve = []
         for i in range(self.channel_num):
             self.list_curve.append(self.graph_show.plot())
-            self.list_curve[i].setDownsampling(None, None, 'peak')
+            #self.list_curve[i].setDownsampling(mode='peak')
             self.list_curve[i].setClipToView(True)
 
 if __name__ == '__main__':
