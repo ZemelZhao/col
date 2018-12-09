@@ -101,12 +101,6 @@ class WindowGraphShow(QWidget):
         layout_main.addLayout(layout_scroll)
         layout_main.addLayout(layout_control)
 
-
-
-
-
-
-
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication

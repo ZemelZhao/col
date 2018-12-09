@@ -23,6 +23,7 @@ import time
 __Author__ = 'Zhao Zeming'
 __Version__ = 1.0
 
+
 class MainWindow(WindowMain):
     signal_state = pyqtSignal(QCloseEvent)
     signal_config_refresh = pyqtSignal(bool)
@@ -78,7 +79,7 @@ class MainWindow(WindowMain):
         finally:
             if judge:
                 self.window_graph_show = WindowGraphShowLogic(self, self.dir_save, self.shared_data_graph)
-                self.window_graph_show.startTimer()
+                self.window_graph_show.startTimer(0)
                 sub = QMdiSubWindow()
                 sub.setWidget(self.window_graph_show)
                 self.mdi.addSubWindow(sub)
@@ -132,7 +133,6 @@ class MainWindow(WindowMain):
         self.channel_num = int(config_ini['Data']['channel_num'])
         self.signal_config_refresh.emit(True)
 
-
     @pyqtSlot(str)
     def slot_status_bar_changed(self, e):
         self.statusBar().showMessage(e)
@@ -141,7 +141,6 @@ class MainWindow(WindowMain):
     def slot_status_bar_clear(self):
         self.statusBar().clearMessage()
         self.timer_clear_status.stop()
-
 
 class MainCom(QObject, mp.Process):
     state_tcp_ip = pyqtSignal(int)
@@ -200,37 +199,24 @@ class ProcessSave(QObject, mp.Process):
 
     def run(self):
         while True:
-            try:
-                action_set = self.list_action.pop(0)
-            except:
-                action_set = [False, False, False]
-            val, e0, e1 = action_set
-            if e0:
-                print(e0)
-
-            if val == 0:
-                try:
-                    exporter = ep.ImageExporter(e0.plotItem)
-                    if exporter.parameters()['height'] < 800:
-                        exporter.parameters()['height'] = 800
-                    exporter.export(os.path.join(e1, 'temp%d.png'% self.graph_no))
-                    self.graph_no += 1
-                    self.signal_state_save.emit('Picture Saved Successfully')
-                except:
-                    self.signal_state_save.emit('Picture Saved Failed')
-                finally:
-                    pass
+            time.sleep(100)
 
     def closeEvent(self, e):
         self.terminate()
 
     @pyqtSlot(pg.graphicsItems.PlotItem.PlotItem, str)
     def save_pic(self, e0, e1):
-        print(pickle.dumps(e0))
-        self.list_action.append([0, pickle.dumps(e0), e1])
+        try:
+            exporter = ep.ImageExporter(e0.plotItem)
+            if exporter.parameters()['height'] < 800:
+                exporter.parameters()['height'] = 800
+            exporter.export(os.path.join(e1, 'temp%d.png'% self.graph_no))
+            self.graph_no += 1
+            self.signal_state_save.emit('Picture Saved Successfully')
+        except:
+            self.signal_state_save.emit('Picture Saved Failed')
 
 if __name__ == '__main__':
-    import sys
     from PyQt5.QtWidgets import QApplication
     shared_data_graph = mp.Array('d', np.array(192*1000*[0]))
     shared_config_change = mp.Value('b', False)

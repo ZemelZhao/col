@@ -26,6 +26,7 @@ __Version__ = 1.0
 
 class WindowGraphShowLogic(WindowGraphShow):
     signal_pic_save = pyqtSignal(bool)
+    signal_set_done = pyqtSignal(bool)
     def __init__(self, parent=None, dir_save=None, shared_data_graph=None):
         self.parent = parent
         if self.parent == None:
@@ -40,8 +41,11 @@ class WindowGraphShowLogic(WindowGraphShow):
                 shutil.copy(os.path.join(self.path_config, 'info.ini'), os.path.join(self.path_temp, '.info.ini'))
         self.judge_close = True
         self.shared_data_graph = shared_data_graph
-        self.timer  = QTimer()
-        self.timer.timeout.connect(self.update)
+        self.timer_graph  = QTimer()
+        self.timer_lcd = QTimer()
+        self.timer_graph.timeout.connect(self.update_graph)
+        self.timer_lcd.timeout.connect(self.update_lcd)
+        self.lcd_shown = False
         super(WindowGraphShowLogic, self).__init__()
 
     def show(self, *arg, **kwarg):
@@ -59,7 +63,14 @@ class WindowGraphShowLogic(WindowGraphShow):
         myFolder = os.path.split(os.path.realpath(__file__))[0]
         file_config_ini = os.path.join(myFolder, os.path.pardir, '.temp', '.config.ini')
         config_ini.read(file_config_ini)
-        self.channel_num = int(config_ini['Data']['channel_num'])
+        config_data = config_ini['Data']
+        self.channel_num = int(config_data['channel_num'])
+        self.restart_auto = int(config_data['auto_res_able'])
+        self.restart_time = int(config_data['auto_res_time'])
+        self.period_time = int(config_data['set_time'])
+        self.set_number = int(config_data['set_number'])
+        self.train_pass_all = self.period_time + (self.set_number - 1)*(self.period_time + self.restart_time)
+        self.time_period = self.period_time + self.restart_time
 
     def isClosed(self):
         return self.judge_close
@@ -75,10 +86,6 @@ class WindowGraphShowLogic(WindowGraphShow):
     def data_save(self):
         pass
 
-    def update(self):
-        self.update_graph()
-        self.update_lcd()
-
     def update_graph(self):
         data = np.frombuffer(self.shared_data_graph.get_obj())
         data = data.reshape(-1, self.channel_num).T
@@ -87,13 +94,53 @@ class WindowGraphShowLogic(WindowGraphShow):
             self.list_curve[i].setData(y=data[i, :1000] + i + 1, pen=(0, 0, 0))
 
     def update_lcd(self):
-        pass
+        self.lcdnumber_countdown.display(self.lcd_time_show)
+        self.lcdnumber_countdown_num.display(self.lcd_num_show)
 
-    def startTimer(self):
-        self.timer.start(1000)
+    def startTimer(self, e):
+        if e:
+            self.timer_lcd.start(100)
+        else:
+            self.timer_graph.start(1000)
 
     def stopTimer(self):
-        self.timer.stop()
+        self.timer_graph.stop()
+        self.timer_lcd.stop()
+
+    def lcd_control(self):
+        if self.restart_auto:
+            if self.lcd_shown:
+                pass
+            else:
+                self.time_start = time.time()
+                self.lcd_shown = True
+            time_pass = time.time() - self.time_start
+            if time_pass > self.time_pass_all:
+                self.lcd_time_show = int(time_pass - self.time_pass_all)
+                self.lcd_num_show = 0
+            else:
+                time_pass = int(time_pass)
+                lcd_time = (time_pass) % self.time_period
+                if lcd_time > self.period_time:
+                    self.lcd_time_show = lcd_time - self.period_time
+                else:
+                    self.lcd_time_show = self.period_time - lcd_time
+                self.lcd_num_show = (time_pass) // self.time_period + 1
+        else:
+            if self.lcd_shown:
+                pass
+            else:
+                self.time_start = time.time()
+                self.lcd_shown = True
+            time_pass = time.time() - self.time_start
+            if time_pass > self.period_time:
+                self.lcd_shown = False
+                self.signal_set_done.emit(True)
+                self.set_number -= 1
+                self.lcd_time_show = 0
+            else:
+                self.lcd_time_show = self.period_time - time_pass
+            self.lcd_num_show = self.set_number
 
     @pyqtSlot(bool)
     def updata_config(self, *arg):
