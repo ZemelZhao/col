@@ -42,6 +42,7 @@ class MainWindow(WindowMain):
         self.initial_setting()
         self.timer_clear_status = QTimer()
         self.timer_clear_status.timeout.connect(self.slot_status_bar_clear)
+        self.start_or_not = False
 
     def initial_setting(self):
         self.myFolder = os.path.split(os.path.realpath(__file__))[0]
@@ -60,15 +61,18 @@ class MainWindow(WindowMain):
         self.signal_state.emit(item)
 
     def main_option(self):
-        self.window_main_option = WindowOptionLogic(self)
-        self.signal_state.connect(self.window_main_option.close)
-        self.window_main_option.pushbutton_ok_page1.clicked.connect(self.slot_refresh_config)
-        self.window_main_option.show()
+        if not self.start_or_not:
+            self.window_main_option = WindowOptionLogic(self)
+            self.signal_state.connect(self.window_main_option.close)
+            self.window_main_option.pushbutton_ok_page1.clicked.connect(self.slot_refresh_config)
+            self.window_main_option.show()
 
     def graph_show(self):
         try:
             if self.window_graph_show.isClosed():
                 judge = True
+            else:
+                judge = False
         except:
             judge = True
         finally:
@@ -106,6 +110,11 @@ class MainWindow(WindowMain):
         finally:
             if judge:
                 self.slot_status_bar_changed('Please open the graph window')
+
+    def start_restart(self):
+        self.start_or_not = True
+        self.slot_status_bar_changed('Start Record Data')
+        self.signal_start_refresh.emit(True)
 
     @pyqtSlot(int)
     def show_warning(self, e):
@@ -184,34 +193,41 @@ class ProcessMonitor(QObject, mp.Process):
 
 class ProcessSave(QObject, mp.Process):
     signal_state_save = pyqtSignal(str)
-    def __init__(self):
+    def __init__(self, queue):
         super(ProcessSave, self).__init__()
-        self.list_action = []
+        self.list_action = mp.Manager().list()
         self.graph_no = 0
 
     def run(self):
         while True:
-            if self.list_action:
-                pass
-            else:
-                time.sleep(0.2)
+            try:
+                action_set = self.list_action.pop(0)
+            except:
+                action_set = [False, False, False]
+            val, e0, e1 = action_set
+            if e0:
+                print(e0)
+
+            if val == 0:
+                try:
+                    exporter = ep.ImageExporter(e0.plotItem)
+                    if exporter.parameters()['height'] < 800:
+                        exporter.parameters()['height'] = 800
+                    exporter.export(os.path.join(e1, 'temp%d.png'% self.graph_no))
+                    self.graph_no += 1
+                    self.signal_state_save.emit('Picture Saved Successfully')
+                except:
+                    self.signal_state_save.emit('Picture Saved Failed')
+                finally:
+                    pass
 
     def closeEvent(self, e):
         self.terminate()
 
     @pyqtSlot(pg.graphicsItems.PlotItem.PlotItem, str)
     def save_pic(self, e0, e1):
-        try:
-            exporter = ep.ImageExporter(e0.plotItem)
-            if exporter.parameters()['height'] < 800:
-                exporter.parameters()['height'] = 800
-            exporter.export(os.path.join(e1, 'temp%d.png'% self.graph_no))
-            self.graph_no += 1
-            self.signal_state_save.emit('Picture Saved Successfully')
-        except:
-            self.signal_state_save.emit('Picture Saved Failed')
-        finally:
-            pass
+        print(pickle.dumps(e0))
+        self.list_action.append([0, pickle.dumps(e0), e1])
 
 if __name__ == '__main__':
     import sys
@@ -220,9 +236,11 @@ if __name__ == '__main__':
     shared_config_change = mp.Value('b', False)
     shared_status_change = mp.Value('b', False)
 
+    queue_save = mp.Queue(maxsize=100)
+
     com = MainCom(shared_data_graph, shared_config_change, shared_status_change)
     mon = ProcessMonitor()
-    sav = ProcessSave()
+    sav = ProcessSave(queue_save)
     app = QApplication(sys.argv)
     win = MainWindow(shared_data_graph)
 
