@@ -128,7 +128,6 @@ class WindowMain(QMainWindow):
             else:
                 target.addAction(action)
 
-
 if __name__ == '__main__':
     import sys
     from PyQt5.QtWidgets import QApplication

@@ -83,7 +83,9 @@ class MainWindow(WindowMain):
                 sub = QMdiSubWindow()
                 sub.setWidget(self.window_graph_show)
                 self.mdi.addSubWindow(sub)
-                self.signal_config_refresh.connect(self.window_graph_show.updata_config)
+                self.signal_config_refresh.connect(self.window_graph_show.update_config)
+                self.signal_start_refresh.connect(self.window_graph_show.update_lcd)
+                self.window_graph_show.signal_file_save.connect(self.file_save)
                 self.window_graph_show.signal_pic_save.connect(self.pic_save)
                 self.window_graph_show.show()
 
@@ -112,9 +114,13 @@ class MainWindow(WindowMain):
             if judge:
                 self.slot_status_bar_changed('Please open the graph window')
 
+    def file_save(self):
+        self.close()
+
     def start_restart(self):
         self.start_or_not = True
         self.slot_status_bar_changed('Start Record Data')
+        self.window_graph_show.startTimer(1)
         self.signal_start_refresh.emit(True)
 
     @pyqtSlot(int)
