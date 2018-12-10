@@ -11,7 +11,7 @@ from PyQt5.QtGui import QCloseEvent
 from windows.window_main import WindowMain
 from logic.window_graph_show_all_logic import WindowGraphShowLogic
 from logic.window_setting_logic import WindowOptionLogic
-from logic.window_tinker_logic import WindowHelpLogic, WindowHelpLogic
+from logic.window_tinker_logic import WindowHelpLogic, WindowAboutLogic
 from logic.head import Cal
 from base.gui_val import GUIValue
 import pyqtgraph as pg
